@@ -469,61 +469,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private BroadcastReceiver mensageria = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(intent.getExtras().getString("comando")!=null) {
-                String comando = intent.getExtras().getString("comando");
-                if (comando.equals("a")) {
-                    recebeComandoNavegacao(0);
-                } else if (comando.equals("d")) {
-                    recebeComandoNavegacao(1);
-                } else if (comando.equals("w")) {
-                    recebeComandoNavegacao(2);
-                } else if (comando.equals("s")) {
-                    recebeComandoNavegacao(3);
-                } else {
-                    Toast.makeText(getApplicationContext(), comando, Toast.LENGTH_SHORT).show();
-                    //Registra log do comando recebido na TextView da tela
-                    //TextView logView = findViewById(R.id.logComandos);
-                }
-            }
-        }
-    };
-
-    public void recebeComandoNavegacao(int direcao) {
-        //Executa ação/comando
-        executaComando(direcao);
-        //this.ultimoComando = direcao;
-        //dataUltimoComando = new Date();
-
-        //Registra log do comando recebido na TextView da tela
-        //TextView logView = findViewById(R.id.logComandos);
-        //registraLog(logView, direcao);
-
-        //Cria thread para voltar ao estado parado após o intervalo de tempo definido, se
-        //o comando for diferente do estado inicial
-        //if(direcao!=R.id.botao_centro) {
-        //    handler.postDelayed(new Runnable() {
-        //        public void run() {
-        //            retornaEstadoParado();
-        //        }
-        //    }, tempoPadraoComando);
-        //}
-    }
-
-    //executa a ação referente ao comando recebido
-    public void executaComando(int direcao){
-        //Desativa todas as ações/estados anteriores
-        //Iterator iteratorEstados = this.estados.iterator();
-        //while(iteratorEstados.hasNext()) {
-        //    findViewById((Integer)iteratorEstados.next()).setBackgroundColor(getResources().getColor(R.color.purple_500));
-        //}
-        //Ativa novo estado associado ao comando recebido
-        //findViewById(direcao).setBackgroundColor(getResources().getColor(R.color.teal_200));
-    }
-
-
     private void showHint() {
         if (stack.size() != 0 && stack.peek().getView() instanceof PresentableView) {
             ToastUtils.setResultToToast(((PresentableView) stack.peek().getView()).getHint());

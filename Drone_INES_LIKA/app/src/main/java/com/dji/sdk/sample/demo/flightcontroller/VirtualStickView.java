@@ -1,13 +1,16 @@
 package com.dji.sdk.sample.demo.flightcontroller;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
@@ -235,6 +238,62 @@ public class VirtualStickView extends RelativeLayout
             }
         });
     }
+
+    /**
+    * Declara receptor de Intents de mensagens provenientes da MensageriaThread,
+    * para chamar o método recebeComandoNavegacao com os dados de navegação recebidos
+    * por mensageria.
+     * **/
+    private BroadcastReceiver mensageria = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent.getExtras().getString("comando")!=null) {
+                String comando = intent.getExtras().getString("comando");
+
+                recebeComandoNavegacao(comando);
+
+                Toast.makeText(context.getApplicationContext(), comando, Toast.LENGTH_SHORT).show();
+                //Registra log do comando recebido na TextView da tela
+                //TextView logView = findViewById(R.id.logComandos);
+
+            }
+        }
+    };
+
+    /**
+     * Recebe o comando de navegação do BroadcastReceiver, que foi enviado pela MensageriaThread por
+     * meio de uma intent, faz as devidas traduções e tratamentos e dispara o gatilho da API do Drone
+     * para executar o movimento.
+     * @param comando
+     */
+    public void recebeComandoNavegacao(String comando) {
+            float pX = 0;
+            float pY = 0;
+
+            //TODO - Precisamos rever como os dados serão enviados pela mensageria.
+            //Por enquanto, apenas para fins de teste básico, tratamos a recepção de um "a" como
+            //um movimento para a esquerda.
+            if(comando.equals("a")) {
+                pX = -0.3f;
+                pY = 0f;
+            }
+
+            //TODO - entender o impacto destes valores na prática
+            float verticalJoyControlMaxSpeed = 2;
+            float yawJoyControlMaxSpeed = 3;
+
+            //TODO - entender o que são estes dados yaw e throttle que são enviados junto com X e Y
+            yaw = yawJoyControlMaxSpeed * pX;
+            throttle = verticalJoyControlMaxSpeed * pY;
+
+            //Aqui é criada a classe que vai ser agendada para executar e enviar o uma instância de
+            // FlightControlData com os dados de navegação pX, pY, yaw e throttle atribuídos acima.
+            if (null == sendVirtualStickDataTimer) {
+                sendVirtualStickDataTask = new SendVirtualStickDataTask();
+                sendVirtualStickDataTimer = new Timer();
+                sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 0, 200);
+            }
+        }
 
     private void tearDownListeners() {
         Simulator simulator = ModuleVerificationUtil.getSimulator();
