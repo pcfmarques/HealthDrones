@@ -21,7 +21,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
-class MensageriaThread extends Thread {
+public class MensageriaThread extends Thread {
     //responsável por receber dados da Thread principal
     //para enviar ao servidor rabbitMQ pelo protocolo AMQP
     public Handler mHandler;

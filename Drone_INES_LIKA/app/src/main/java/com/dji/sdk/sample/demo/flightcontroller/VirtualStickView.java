@@ -27,6 +27,7 @@ import com.dji.sdk.sample.internal.view.PresentableView;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import controlepormensageria.MensageriaThread;
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.simulator.InitializationData;
 import dji.common.flightcontroller.simulator.SimulatorState;
@@ -77,10 +78,13 @@ public class VirtualStickView extends RelativeLayout
     private float yaw;
     private float throttle;
     private FlightControllerKey isSimulatorActived;
+    MensageriaThread mensageriaThread;
+
 
     public VirtualStickView(Context context) {
         super(context);
         init(context);
+        mensageriaThread =  new MensageriaThread(context);
     }
 
     @NonNull
@@ -117,6 +121,9 @@ public class VirtualStickView extends RelativeLayout
 
         initAllKeys();
         initUI();
+
+        //abre conexão com servidor rabbitMQ
+        mensageriaThread.start();
     }
 
     private void initAllKeys() {
@@ -267,27 +274,53 @@ public class VirtualStickView extends RelativeLayout
      * @param comando
      */
     public void recebeComandoNavegacao(String comando) {
-            float pX = 0;
-            float pY = 0;
+            //Coordenadas X e Y do controle virtual anaĺogico esquerdo (girar, subir/descer - eixo Z )
+            float controleEsquerdo_pX = 0;
+            float controleEsquerdo_pY = 0;
+            //Coordenadas X e Y do controle virtual anaĺogico direito (frente, trás, esquerda,
+            //  direita - eixos X/Y)
+            float controleDireito_pX = 0;
+            float controleDireito_pY = 0;
 
             //TODO - Precisamos rever como os dados serão enviados pela mensageria.
             //Por enquanto, apenas para fins de teste básico, tratamos a recepção de um "a" como
-            //um movimento para a esquerda.
+            //um movimento de GIRO para esquerda.
             if(comando.equals("a")) {
-                pX = -0.3f;
-                pY = 0f;
+                controleEsquerdo_pX = -0.3f;
             }
 
             //TODO - entender o impacto destes valores na prática
             float verticalJoyControlMaxSpeed = 2;
             float yawJoyControlMaxSpeed = 3;
 
-            //TODO - entender o que são estes dados yaw e throttle que são enviados junto com X e Y
-            yaw = yawJoyControlMaxSpeed * pX;
-            throttle = verticalJoyControlMaxSpeed * pY;
+            float pitchJoyControlMaxSpeed = 10;
+            float rollJoyControlMaxSpeed = 10;
 
-            //Aqui é criada a classe que vai ser agendada para executar e enviar o uma instância de
-            // FlightControlData com os dados de navegação pX, pY, yaw e throttle atribuídos acima.
+            //flag setada como true por padrão, fazendo com que
+            // pitch: represente posição do eixo X do virtual stick
+            // roll: represente posição do eixo Y do virtual stick
+            if (horizontalCoordinateFlag) {
+                if (rollPitchControlModeFlag) {
+                    pitch = (float) (pitchJoyControlMaxSpeed * controleDireito_pX);
+                    roll = (float) (rollJoyControlMaxSpeed * controleDireito_pY);
+                } else {
+                    pitch = -(float) (pitchJoyControlMaxSpeed * controleDireito_pY);
+                    roll = (float) (rollJoyControlMaxSpeed * controleDireito_pX);
+                }
+            }
+
+            //yaw representa o giro do drone, tem dois modos:
+            // modo velocidade angular, em que o valor passado é a quantidade de graus por segundo,
+            // modo ângulo, em que o valor passado é o ângulo para girar.
+            yaw = yawJoyControlMaxSpeed * controleEsquerdo_pX;
+
+            //throtle representa o movimento vertical (eixo Z), tem dois modos:
+            // modo posição: valor que representa a altitude em relação à posição de decolagem,
+            // modo velocidade: valores positivos representam ascenção, negativos descida.
+            throttle = verticalJoyControlMaxSpeed * controleEsquerdo_pY;
+
+            //Aqui é criada a classe que vai ser agendada para executar e enviar uma instância de
+            // FlightControlData com os dados de navegação pitch, roll, yaw e throttle atribuídos acima.
             if (null == sendVirtualStickDataTimer) {
                 sendVirtualStickDataTask = new SendVirtualStickDataTask();
                 sendVirtualStickDataTimer = new Timer();
